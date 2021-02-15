@@ -1,0 +1,446 @@
+---
+title: "night_spl_lm"
+author: "Becca Van Hoeck"
+date: "May 5, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import data
+
+```{r}
+# library(dplyr)
+# library(lme4)
+# library(ggplot2)
+# library(emmeans)
+# library(R.matlab)
+# library(agricolae)
+#  
+# setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/scripts_09_19/suncycle")
+# suncycle = as.data.frame(readMat("succession_suncycle.mat")) # time of sunrise, set, and twilights for dayparts
+# 
+# setwd("C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/Results")
+# daily_spl = readMat("CRFL_SPL_all_NO40.mat") # hourly average SPL for each full day on all site/deploys
+```
+
+## Working with full data - assigning daypart to each 15 minute file time
+
+```{r}
+# spl_data = read.csv('SPL_all_data_succession.csv', header = TRUE)
+# spl_data = mutate(spl_data, Site = case_when(site == 1 ~ "Indra", site == 2 ~ "JJTug"),
+#                  Deploy = case_when(month == 5 ~ 1, month == 7 ~ 2, month == 9 ~ 3, 
+#                                     month == 10 | month == 11 ~ 4, month == 12 ~ 5, month == 4 ~ 6))
+# spl_data$id = paste(spl_data$Site,spl_data$Deploy, sep = "_")
+# spl_data$Deploy = as.factor(spl_data$Deploy)
+# spl_data$Site = as.factor(spl_data$Site)
+# 
+# # create a vector with tbins of each daypart times for each deployment
+# tbins = seq(0,23.75, by = 0.25)
+# d1_dawn = seq(suncycle$d1.dawn, suncycle$d1.sRISE-0.25, by = 0.25)
+# d2_dawn = seq(suncycle$d2.dawn, suncycle$d2.sRISE-0.25, by = 0.25)
+# d3_dawn = seq(suncycle$d3.dawn, suncycle$d3.sRISE-0.25, by = 0.25)
+# d4_dawn = seq(suncycle$d4.dawn, suncycle$d4.sRISE-0.25, by = 0.25)
+# d5_dawn = seq(suncycle$d5.dawn, suncycle$d5.sRISE-0.25, by = 0.25)
+# d6_dawn = seq(suncycle$d6.dawn, suncycle$d6.sRISE-0.25, by = 0.25)
+# 
+# d1_day = seq(suncycle$d1.sRISE, suncycle$d1.sSET-0.25, by = 0.25)
+# d2_day = seq(suncycle$d2.sRISE, suncycle$d2.sSET-0.25, by = 0.25)
+# d3_day = seq(suncycle$d3.sRISE, suncycle$d3.sSET-0.25, by = 0.25)
+# d4_day = seq(suncycle$d4.sRISE, suncycle$d4.sSET-0.25, by = 0.25)
+# d5_day = seq(suncycle$d5.sRISE, suncycle$d5.sSET-0.25, by = 0.25)
+# d6_day = seq(suncycle$d6.sRISE, suncycle$d6.sSET-0.25, by = 0.25)
+# 
+# d1_dusk = seq(suncycle$d1.sSET, suncycle$d1.dusk-0.25, by = 0.25)
+# d2_dusk = seq(suncycle$d2.sSET, suncycle$d2.dusk-0.25, by = 0.25)
+# d3_dusk = seq(suncycle$d3.sSET, suncycle$d3.dusk-0.25, by = 0.25)
+# d4_dusk = seq(suncycle$d4.sSET, suncycle$d4.dusk-0.25, by = 0.25)
+# d5_dusk = seq(suncycle$d5.sSET, suncycle$d5.dusk-0.25, by = 0.25)
+# d6_dusk = seq(suncycle$d6.sSET, suncycle$d6.dusk-0.25, by = 0.25)
+# 
+# d1_night = c(seq(suncycle$d1.dusk, 23.75, by = 0.25), seq(0, suncycle$d1.dawn-0.25, by = 0.25))
+# d2_night = c(seq(suncycle$d2.dusk, 23.75, by = 0.25), seq(0, suncycle$d2.dawn-0.25, by = 0.25))
+# d3_night = c(seq(suncycle$d3.dusk, 23.75, by = 0.25), seq(0, suncycle$d3.dawn-0.25, by = 0.25))
+# d4_night = c(seq(suncycle$d4.dusk, 23.75, by = 0.25), seq(0, suncycle$d4.dawn-0.25, by = 0.25))
+# d5_night = c(seq(suncycle$d5.dusk, 23.75, by = 0.25), seq(0, suncycle$d5.dawn-0.25, by = 0.25))
+# d6_night = c(seq(suncycle$d6.dusk, 23.75, by = 0.25), seq(0, suncycle$d6.dawn-0.25, by = 0.25))
+# 
+# # trying to assign daypart based on tbins - only works if longer vector is a multiple of the other
+# #spl_d1 = group_by(spl_d1, hrmn_edt) %>%
+# #  mutate(daypart = case_when(hrmn_edt == d1_dawn ~ "dawn",
+# #                                            hrmn_edt == d1_day ~ "day", 
+# #                                            hrmn_edt == d1_dusk ~ "dusk",
+# #                                            hrmn_edt == d1_night ~ "night"))
+# 
+# # Putting daypart vectors together
+# d1_dayparts = c(rep("night",17),rep("dawn",7),rep("day",57),rep("dusk",6),rep("night",9))
+# d2_dayparts = c(rep("night",18),rep("dawn",7),rep("day",56),rep("dusk",7),rep("night",8))
+# d3_dayparts = c(rep("night",20),rep("dawn",6),rep("day",54),rep("dusk",6),rep("night",10))
+# d4_dayparts = c(rep("night",24),rep("dawn",6),rep("day",43),rep("dusk",6),rep("night",17))
+# d5_dayparts = c(rep("night",26),rep("dawn",6),rep("day",40),rep("dusk",6),rep("night",18))
+# d6_dayparts = c(rep("night",20),rep("dawn",6),rep("day",53),rep("dusk",6),rep("night",11))
+# 
+# 
+# 
+# # adding daypart vectors can loop through because only full days are included and are in order from 0:23.75
+# spl_d1 = filter(spl_data, Deploy == 1)
+# spl_d1$daypart = rep(d1_dayparts, nrow(spl_d1)/96)
+# spl_d2 = filter(spl_data, Deploy == 2)
+# spl_d2$daypart = rep(d2_dayparts, nrow(spl_d2)/96)
+# spl_d3 = filter(spl_data, Deploy == 3)
+# spl_d3$daypart = rep(d3_dayparts, nrow(spl_d3)/96)
+# spl_d4 = filter(spl_data, Deploy == 4)
+# spl_d4$daypart = rep(d4_dayparts, nrow(spl_d4)/96)
+# spl_d5 = filter(spl_data, Deploy == 5)
+# spl_d5$daypart = rep(d5_dayparts, nrow(spl_d5)/96)
+# spl_d6 = filter(spl_data, Deploy == 6)
+# spl_d6$daypart = rep(d6_dayparts, nrow(spl_d6)/96)
+# 
+# spl_data1 = rbind(spl_d1,spl_d2,spl_d3,spl_d4,spl_d5,spl_d6)
+
+```
+
+## Averaging spls at dusk within hr across days within deployment
+
+```{r}
+# avg_spl = spl_data1 %>% group_by(Deploy, Site, daypart, day) %>%
+#   summarise(avg_spl_low = mean(low_SPL_linear), avg_spl_high = mean(high_SPL_linear)) %>%
+#   mutate(avg_low_db = 10*log10(avg_spl_low), avg_high_db = 10*log10(avg_spl_high))
+
+```
+
+## Dusk
+
+```{r}
+# avg_spl_dusk = filter(avg_spl, daypart == "dusk")
+# avg_spl_dusk = avg_spl_dusk %>% mutate(ID = paste(Site, Deploy, sep = "_"), 
+#                                        deploy = case_when(Deploy == 1 ~ "May",
+#                                                           Deploy == 2 ~ "July",
+#                                                           Deploy == 3 ~ "Sept",
+#                                                           Deploy == 4 ~ "Oct",
+#                                                           Deploy == 5 ~ "Dec",
+#                                                           Deploy == 6 ~ "Apr"))
+# avg_spl_dusk$deploy = factor(avg_spl_dusk$deploy, levels = c("May","July","Sept","Oct","Dec","Apr"))
+# avg_spl_dusk$Site = factor(avg_spl_dusk$Site, levels = c("Indra", "JJTug"))
+```
+
+## Ignore above!
+
+START HERE: 03/05/2020
+
+
+```{r}
+
+library(ggplot2)
+library(ggpubr)
+setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final")
+#spl_table = read.csv("low_dusk_spl_table.csv", header = TRUE)
+spl_table = read.csv("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/low_dusk_spl_table_time_02-21.csv", header = TRUE)
+spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
+
+
+# Low Freq: Normality test qqplot
+#qqnorm(avg_spl_dusk$avg_low_db)
+#qqline(avg_spl_dusk$avg_low_db)
+
+qqnorm(spl_table$spl_db)
+qqline(spl_table$spl_db)
+
+# High Freq: Normality test qqplot
+qqnorm(spl_table_high$spl_db)
+qqline(spl_table_high$spl_db)
+
+# Histograms
+#hist(avg_spl_dusk$avg_low_db)
+#hist(avg_spl_dusk$avg_high_db)
+
+hist(spl_table$spl_db)
+hist(spl_table_high$spl_db)
+```
+
+## Low Frequency
+
+```{r}
+#mod2 = lm(avg_low_db ~ Site*Deploy, data = avg_spl_dusk)
+#summary(mod2)
+#drop1(mod2, test = "F")
+#anova(mod2)
+
+#ggplot(avg_spl_dusk, aes(x = deploy, y = avg_low_db))+ theme_bw()+
+#  geom_boxplot()+ facet_wrap("Site")+ 
+#  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+ 
+#  theme(axis.text = element_text(size = 14), 
+#        strip.text = element_text(size = 16), 
+#        axis.title = element_text(size = 16))
+#ggsave("low_dusk_spl.png", 
+#       path =  "C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/plots_09_19/",
+#       width = 169,height = 81, units = "mm")
+#ggsave("low_dusk_spl.eps", path = "C:/Users/Becca/Desktop/figs", width = 169, units = "mm")
+
+mod2 = lm(spl_db ~ site*deploy, data = spl_table)
+summary(mod2)
+#drop1(mod2, test = "F")
+anova(mod2)
+ANOVA_low = aov(mod2)
+posthoc = TukeyHSD(ANOVA_low)
+site_deploy_mc = posthoc$`site:deploy`
+
+spl_table$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
+
+#compare_means(spl_db ~ site, data = spl_table, group.by = "deploy") 
+
+lf_spl = ggplot(spl_table, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()+
+  geom_boxplot()+ #facet_wrap("Site")
+  scale_fill_manual(values=c("gray71", "firebrick2"), )+
+  scale_y_continuous(breaks=seq(90,120,5))+
+  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+
+  theme(axis.text = element_text(size = 14), 
+        strip.text = element_text(size = 16), 
+        axis.title = element_text(size = 16), 
+        legend.position = "none") 
+        
+
+```
+
+## High frequency 
+
+```{r}
+
+highMod = lm(spl_db ~ site*deploy, data = spl_table_high)
+summary(highMod)
+#drop1(highMod, test = "F")
+anova(highMod)
+ANOVA_high = aov(highMod)
+posthoc_high = TukeyHSD(ANOVA_high)
+site_deploy_mcH = posthoc_high$`site:deploy`
+
+spl_table_high$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
+
+#compare_means(spl_db ~ site, data = spl_table, group.by = "deploy") 
+
+hf_spl = ggplot(spl_table_high, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()+
+  geom_boxplot()+ #facet_wrap("Site")
+  scale_fill_manual(values=c("gray71", "firebrick2"), )+
+  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+ 
+  theme(axis.text = element_text(size = 14), 
+        strip.text = element_text(size = 16), 
+        axis.title = element_text(size = 16), 
+        legend.position = c(0.9, 0.15))
+
+# 
+# high_mod1 = lm(avg_high_db ~ Site*Deploy, data = avg_spl_dusk)
+# summary(high_mod1)
+# drop1(high_mod1, test = "F")
+# anova(high_mod1)
+# ggplot(avg_spl_dusk, aes(x = deploy, y = avg_high_db))+ theme_bw()+
+#   geom_boxplot()+ facet_wrap("Site")+
+#   labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+ 
+#   theme(axis.text = element_text(size = 14), 
+#         strip.text = element_text(size = 16), 
+#         axis.title = element_text(size = 16))
+#ggsave("high_dusk_spl.png", 
+#       path = "C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/plots_09_19/", 
+#       width = 169, height = 81, units = "mm")
+#ggsave("high_dusk_spl.eps", path = "C:/Users/Becca/Desktop/figs", width = 169, units = "mm")
+
+```
+
+## Putting the plots together
+
+```{r}
+library(cowplot)
+
+spl_plot = plot_grid(lf_spl, hf_spl, labels = c('A', 'B'))
+
+ggsave("dusk_spl_crypticPAM.eps", path = "C:/Users/Becca/Desktop/", width = 169,height = 80, units = "mm", dpi = 300)
+
+```
+
+## Estimated marginal means
+
+```{r}
+em_means = emmeans(mod2, ~ Site*Deploy)
+plot(em_means, by = "Deploy")+ theme_bw()+
+  labs(x = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"), y = "Site")+
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        strip.text = element_text(size = 16))
+#ggsave("low_emmeans.svg", path = "C:/Users/Becca/Desktop/figs", width = 169, height = 169, units = "mm")
+dev.off()
+
+
+
+high_emmeans = emmeans(high_mod1, specs = ~ Site*Deploy)
+#png("high_emmeans.png", width = 169, height = 162, units = "mm", res = 300)
+plot(high_emmeans, by = "Deploy")+ theme_bw()+
+  labs(x = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"), y = "Site")+
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        strip.text = element_text(size = 16))
+ggsave("high_emmeans.svg", path = "C:/Users/Becca/Desktop/figs", width = 169, height = 169, units = "mm")
+
+dev.off() 
+## Exploring covariance reduction to look at just site variation and just deploy var
+#mtcars.rg_d.c <- ref_grid(mtcars.lm, at = list(cyl = c(4,6,8)),
+#                          cov.reduce = disp ~ cyl)
+
+#spl_rg_s.d = ref_grid(mod2, at = list(deploy = c("Nov","Jan","Apr","Jun","Aug")), cov.reduce = Site ~ deploy)
+```
+
+## Test code
+
+```{r}
+
+## Exploring expanding lm to twilight and night 
+# this is the average and median SPL for each day across dusk, night, and dawn
+avg_spl_night = spl_data1 %>% filter(daypart == "dusk" | daypart == "night" | daypart == "dawn") %>%
+  group_by(Deploy,Site,day) %>%
+  summarise(avg_spl_low = mean(low_SPL_linear), avg_spl_high = mean(high_SPL_linear),
+            med_spl_low = median(low_SPL_linear), med_spl_high = median(high_SPL_linear))%>%
+  mutate(avg_low_db = 10*log10(avg_spl_low), avg_high_db = 10*log10(avg_spl_high),
+         med_low_db = 10*log10(med_spl_low), med_high_db = 10*log10(med_spl_high))
+
+# qqplot for normality test
+qqnorm(avg_spl_night$avg_low_db)
+qqline(avg_spl_night$avg_low_db)
+
+qqnorm(avg_spl_night$avg_high_db)
+qqline(avg_spl_night$avg_high_db)
+
+```
+
+## Exploring wind and temperature to evaluate any trends
+
+```{r}
+
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+
+# 2016
+buoy_2016 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/onslow_bay_buoy_2016.txt",
+                       header= TRUE, na.strings = "999.0")
+#buoy_2016 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/wilm_buoy_16.txt",
+#                       header= TRUE, na.strings = "999.0")
+
+buoy_2016$date = paste(buoy_2016$YY, buoy_2016$MM, buoy_2016$DD, buoy_2016$hh, buoy_2016$mm, sep = ":")
+buoy_2016$DateTime = ymd_hm(buoy_2016$date)
+
+buoy_2016$day = paste(buoy_2016$YY, buoy_2016$MM, buoy_2016$DD, sep = "-")
+buoy_2016$day = ymd(buoy_2016$day)
+ 
+# water temperature: 
+ggplot(data = buoy_2016, aes(x = DateTime, y = WTMP))+
+  geom_line()+ ggtitle("Water temp 2016")
+
+# wind speed - annually very random, but should subset to specific sampling periods
+ggplot(data = buoy_2016, aes(x = DateTime, y = WSPD))+
+  geom_line()
+
+dates1 = seq(ymd("2016-05-18"),ymd("2016-05-24"), by = "day")
+dates2 = seq(ymd("2016-07-22"),ymd("2016-07-27"), by = "day")
+dates3 = seq(ymd("2016-09-14"),ymd("2016-09-17"), by = "day")
+dates4 = seq(ymd("2016-10-27"),ymd("2016-10-31"), by = "day")
+dates5 = seq(ymd("2016-12-03"),ymd("2016-12-07"), by = "day")
+
+sampling_dates = c(dates1,dates2,dates3,dates4,dates5)
+sampling_dates = as.data.frame(sampling_dates)
+buoy_16sp = left_join(sampling_dates, buoy_2016, by = c("sampling_dates" = "day"))
+
+# 2017
+buoy_2017 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/onslow_bay_buoy_2017.txt",
+                       header= TRUE, na.strings = "999.0")
+#buoy_2017 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/wilm_buoy_17.txt",
+#                       header= TRUE, na.strings = "999.0")
+
+buoy_2017$date = paste(buoy_2017$YY, buoy_2017$MM, buoy_2017$DD, buoy_2017$hh, buoy_2017$mm, sep = ":")
+buoy_2017$DateTime = ymd_hm(buoy_2017$date)
+
+buoy_2017$day = paste(buoy_2017$YY, buoy_2017$MM, buoy_2017$DD, sep = "-")
+buoy_2017$day = ymd(buoy_2017$day)
+
+dates6 = seq(ymd("2017-04-21"),ymd("2017-04-26"), by = "day")
+dates6 = as.data.frame(dates6)
+colnames(dates6) = "sampling_dates"
+buoy_17sp = left_join(dates6, buoy_2017, by = c("sampling_dates" = "day"))
+
+data = rbind(buoy_16sp,buoy_17sp)
+
+ggplot(data = buoy_2017, aes(x = DateTime, y = WTMP))+
+  geom_line()
+
+
+```
+
+# Plot boxplot of wind speed for each sampling period
+
+```{r}
+data$MM = factor(data$MM, levels = c("5","7","9","10","12","4"))
+
+
+ggplot(data = data, aes(x = MM, y = WSPD))+ theme_bw()+
+  geom_boxplot()+
+  geom_jitter(width = 0.15, alpha = 0.2, shape = 16)+
+  xlab("Sampling period (month)")
+
+wspd_anova = lm(WSPD ~ MM, data = data)
+summary(wspd_anova)
+anova(wspd_anova)
+wspd_aov = aov(wspd_anova)
+TukeyHSD(wspd_aov)
+
+```
+
+# Windspeed timeseries
+
+```{r}
+
+ggplot(data, aes(x = DateTime, y = WSPD))+
+  geom_line()
+
+envd1 = filter(data, data$MM == "5")
+write.csv(envd1,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd1.csv")
+envd2 = filter(data, data$MM == "7")
+write.csv(envd2,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd2.csv")
+envd3 = filter(data, data$MM == "9")
+write.csv(envd3,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd3.csv")
+envd4 = filter(data, data$MM == "10")
+write.csv(envd4,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd4.csv")
+envd5 = filter(data, data$MM == "12")
+write.csv(envd5,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd5.csv")
+envd6 = filter(data, data$MM == "4")
+write.csv(envd6,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd6.csv")
+
+# May
+ggplot(data = envd1, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("May")
+
+# July
+ggplot(data = envd2, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("Jul")
+
+# Sep
+ggplot(data = envd3, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("Sep")
+
+# Oct
+ggplot(data = envd4, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("Oct")
+
+# Dec
+ggplot(data = envd5, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("Dec")
+
+# April
+ggplot(data = envd6, aes(x = DateTime, y = WSPD))+
+  geom_line()+ ggtitle("Apr")
+
+
+mean(envd3$WSPD)-mean(envd2$WSPD)
+
+
+```
+
+
