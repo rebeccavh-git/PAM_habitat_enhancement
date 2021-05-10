@@ -9,135 +9,172 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Import data
+Revised Analysis: 05/10/2021
+
+Currently using two-way repeated measures ANOVA, followed by post-hoc pairwise comparisons
+This accounts for the temporal autocorrelation, but likely doesn't account for pseudoreplication
 
 ```{r}
-# library(dplyr)
-# library(lme4)
-# library(ggplot2)
-# library(emmeans)
-# library(R.matlab)
-# library(agricolae)
-#  
-# setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/scripts_09_19/suncycle")
-# suncycle = as.data.frame(readMat("succession_suncycle.mat")) # time of sunrise, set, and twilights for dayparts
-# 
-# setwd("C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/Results")
-# daily_spl = readMat("CRFL_SPL_all_NO40.mat") # hourly average SPL for each full day on all site/deploys
-```
-
-## Working with full data - assigning daypart to each 15 minute file time
-
-```{r}
-# spl_data = read.csv('SPL_all_data_succession.csv', header = TRUE)
-# spl_data = mutate(spl_data, Site = case_when(site == 1 ~ "Indra", site == 2 ~ "JJTug"),
-#                  Deploy = case_when(month == 5 ~ 1, month == 7 ~ 2, month == 9 ~ 3, 
-#                                     month == 10 | month == 11 ~ 4, month == 12 ~ 5, month == 4 ~ 6))
-# spl_data$id = paste(spl_data$Site,spl_data$Deploy, sep = "_")
-# spl_data$Deploy = as.factor(spl_data$Deploy)
-# spl_data$Site = as.factor(spl_data$Site)
-# 
-# # create a vector with tbins of each daypart times for each deployment
-# tbins = seq(0,23.75, by = 0.25)
-# d1_dawn = seq(suncycle$d1.dawn, suncycle$d1.sRISE-0.25, by = 0.25)
-# d2_dawn = seq(suncycle$d2.dawn, suncycle$d2.sRISE-0.25, by = 0.25)
-# d3_dawn = seq(suncycle$d3.dawn, suncycle$d3.sRISE-0.25, by = 0.25)
-# d4_dawn = seq(suncycle$d4.dawn, suncycle$d4.sRISE-0.25, by = 0.25)
-# d5_dawn = seq(suncycle$d5.dawn, suncycle$d5.sRISE-0.25, by = 0.25)
-# d6_dawn = seq(suncycle$d6.dawn, suncycle$d6.sRISE-0.25, by = 0.25)
-# 
-# d1_day = seq(suncycle$d1.sRISE, suncycle$d1.sSET-0.25, by = 0.25)
-# d2_day = seq(suncycle$d2.sRISE, suncycle$d2.sSET-0.25, by = 0.25)
-# d3_day = seq(suncycle$d3.sRISE, suncycle$d3.sSET-0.25, by = 0.25)
-# d4_day = seq(suncycle$d4.sRISE, suncycle$d4.sSET-0.25, by = 0.25)
-# d5_day = seq(suncycle$d5.sRISE, suncycle$d5.sSET-0.25, by = 0.25)
-# d6_day = seq(suncycle$d6.sRISE, suncycle$d6.sSET-0.25, by = 0.25)
-# 
-# d1_dusk = seq(suncycle$d1.sSET, suncycle$d1.dusk-0.25, by = 0.25)
-# d2_dusk = seq(suncycle$d2.sSET, suncycle$d2.dusk-0.25, by = 0.25)
-# d3_dusk = seq(suncycle$d3.sSET, suncycle$d3.dusk-0.25, by = 0.25)
-# d4_dusk = seq(suncycle$d4.sSET, suncycle$d4.dusk-0.25, by = 0.25)
-# d5_dusk = seq(suncycle$d5.sSET, suncycle$d5.dusk-0.25, by = 0.25)
-# d6_dusk = seq(suncycle$d6.sSET, suncycle$d6.dusk-0.25, by = 0.25)
-# 
-# d1_night = c(seq(suncycle$d1.dusk, 23.75, by = 0.25), seq(0, suncycle$d1.dawn-0.25, by = 0.25))
-# d2_night = c(seq(suncycle$d2.dusk, 23.75, by = 0.25), seq(0, suncycle$d2.dawn-0.25, by = 0.25))
-# d3_night = c(seq(suncycle$d3.dusk, 23.75, by = 0.25), seq(0, suncycle$d3.dawn-0.25, by = 0.25))
-# d4_night = c(seq(suncycle$d4.dusk, 23.75, by = 0.25), seq(0, suncycle$d4.dawn-0.25, by = 0.25))
-# d5_night = c(seq(suncycle$d5.dusk, 23.75, by = 0.25), seq(0, suncycle$d5.dawn-0.25, by = 0.25))
-# d6_night = c(seq(suncycle$d6.dusk, 23.75, by = 0.25), seq(0, suncycle$d6.dawn-0.25, by = 0.25))
-# 
-# # trying to assign daypart based on tbins - only works if longer vector is a multiple of the other
-# #spl_d1 = group_by(spl_d1, hrmn_edt) %>%
-# #  mutate(daypart = case_when(hrmn_edt == d1_dawn ~ "dawn",
-# #                                            hrmn_edt == d1_day ~ "day", 
-# #                                            hrmn_edt == d1_dusk ~ "dusk",
-# #                                            hrmn_edt == d1_night ~ "night"))
-# 
-# # Putting daypart vectors together
-# d1_dayparts = c(rep("night",17),rep("dawn",7),rep("day",57),rep("dusk",6),rep("night",9))
-# d2_dayparts = c(rep("night",18),rep("dawn",7),rep("day",56),rep("dusk",7),rep("night",8))
-# d3_dayparts = c(rep("night",20),rep("dawn",6),rep("day",54),rep("dusk",6),rep("night",10))
-# d4_dayparts = c(rep("night",24),rep("dawn",6),rep("day",43),rep("dusk",6),rep("night",17))
-# d5_dayparts = c(rep("night",26),rep("dawn",6),rep("day",40),rep("dusk",6),rep("night",18))
-# d6_dayparts = c(rep("night",20),rep("dawn",6),rep("day",53),rep("dusk",6),rep("night",11))
-# 
-# 
-# 
-# # adding daypart vectors can loop through because only full days are included and are in order from 0:23.75
-# spl_d1 = filter(spl_data, Deploy == 1)
-# spl_d1$daypart = rep(d1_dayparts, nrow(spl_d1)/96)
-# spl_d2 = filter(spl_data, Deploy == 2)
-# spl_d2$daypart = rep(d2_dayparts, nrow(spl_d2)/96)
-# spl_d3 = filter(spl_data, Deploy == 3)
-# spl_d3$daypart = rep(d3_dayparts, nrow(spl_d3)/96)
-# spl_d4 = filter(spl_data, Deploy == 4)
-# spl_d4$daypart = rep(d4_dayparts, nrow(spl_d4)/96)
-# spl_d5 = filter(spl_data, Deploy == 5)
-# spl_d5$daypart = rep(d5_dayparts, nrow(spl_d5)/96)
-# spl_d6 = filter(spl_data, Deploy == 6)
-# spl_d6$daypart = rep(d6_dayparts, nrow(spl_d6)/96)
-# 
-# spl_data1 = rbind(spl_d1,spl_d2,spl_d3,spl_d4,spl_d5,spl_d6)
+library(ggplot2)
+library(ggpubr)
+library(tidyverse)
+library(rstatix)
 
 ```
 
-## Averaging spls at dusk within hr across days within deployment
+# Low Frequency
 
 ```{r}
-# avg_spl = spl_data1 %>% group_by(Deploy, Site, daypart, day) %>%
-#   summarise(avg_spl_low = mean(low_SPL_linear), avg_spl_high = mean(high_SPL_linear)) %>%
-#   mutate(avg_low_db = 10*log10(avg_spl_low), avg_high_db = 10*log10(avg_spl_high))
+spl_table = read.csv("C:/Users/Becca/Documents/git/PAM_Habitat_Enhancement/low_dusk_spl_table_time_02-21.csv", header = TRUE)
+spl_table$hour = as.factor(spl_table$hour)
+spl_table$site = as.factor(spl_table$site)
+spl_table$deploy = as.factor(spl_table$deploy)
+
+# Two-way Repeated measures ANOVA:
+
+# Examine data
+spl_table %>%
+  group_by(site, deploy) %>%
+  get_summary_stats(spl_db, type = "mean_sd")
+
+# Check for outliers
+spl_table %>%
+  group_by(site, deploy) %>%
+  identify_outliers(spl_db) # one outlier, but not extreme
+
+# Check normality
+spl_table %>%
+  group_by(site,deploy) %>%
+  shapiro_test(spl_db) # Indra April and JJ Tug Dec violate normality
+
+ggqqplot(spl_table, "spl_db", ggtheme = theme_bw()) +
+  facet_grid(deploy ~ site, labeller = "label_both") # pass normality test with qqplot
+
+# Conduct ANOVA  
+res.aov.low <- anova_test(
+  data = spl_table, dv = spl_db, wid = hour,
+  within = c(site, deploy)
+  )
+get_anova_table(res.aov.low)
+
+### identified a significant effect of site, deployment and their interaction. Deployment has the largest generalized effect size
+
+# Effect of site at each time point
+one.way <- spl_table %>%
+  group_by(deploy) %>%
+  anova_test(dv = spl_db, wid = hour, within = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+### Identified significant differences in all deployments except April (final deployment)
+
+# Pairwise comparison between sites
+pwc.low <- spl_table %>%
+  group_by(deploy) %>%
+  pairwise_t_test(
+    spl_db ~ site, paired = TRUE,
+    p.adjust.method = "bonferroni"
+    )
+pwc.low
+### New reef (JJTug) is significantly louder in September
+### New Reef and Established reef are the same in April
+
 
 ```
 
-## Dusk
+# High Frequency
+
+# To dO: add id variable and change cod for high frequency
 
 ```{r}
-# avg_spl_dusk = filter(avg_spl, daypart == "dusk")
-# avg_spl_dusk = avg_spl_dusk %>% mutate(ID = paste(Site, Deploy, sep = "_"), 
-#                                        deploy = case_when(Deploy == 1 ~ "May",
-#                                                           Deploy == 2 ~ "July",
-#                                                           Deploy == 3 ~ "Sept",
-#                                                           Deploy == 4 ~ "Oct",
-#                                                           Deploy == 5 ~ "Dec",
-#                                                           Deploy == 6 ~ "Apr"))
-# avg_spl_dusk$deploy = factor(avg_spl_dusk$deploy, levels = c("May","July","Sept","Oct","Dec","Apr"))
-# avg_spl_dusk$Site = factor(avg_spl_dusk$Site, levels = c("Indra", "JJTug"))
-```
 
-## Ignore above!
+spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
+spl_table_high$hour = as.factor(spl_table_high$hour)
+spl_table_high$site = as.factor(spl_table_high$site)
+spl_table_high$deploy = as.factor(spl_table_high$deploy)
+
+
+# testing two-way Repeated measures: 
+spl_table_high %>%
+  group_by(site, deploy) %>%
+  get_summary_stats(spl_db, type = "mean_sd")
+
+spl_table_high %>%
+  group_by(site, deploy) %>%
+  identify_outliers(spl_db) # one outlier, but not extreme
+
+spl_table_high %>%
+  group_by(site,deploy) %>%
+  shapiro_test(spl_db) # Indra April and JJ Tug Dec violate normality
+
+ggqqplot(spl_table_high, "spl_db", ggtheme = theme_bw()) +
+  facet_grid(deploy ~ site, labeller = "label_both") # pass normality test with qqplot
+
+# Conduct ANOVA  
+# is pseudoreplication still a concern?
+res.aov.high <- anova_test(
+  data = spl_table_high, dv = spl_db, wid = hour,
+  within = c(site, deploy)
+  )
+get_anova_table(res.aov.high)
+
+# Effect of site at each time point
+one.way.high <- spl_table_high %>%
+  group_by(deploy) %>%
+  anova_test(dv = spl_db, wid = hour, within = site) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way.high
+
+# Pairwise comparison between sites
+pwc.high <- spl_table_high %>%
+  group_by(deploy) %>%
+  pairwise_t_test(
+    spl_db ~ site, paired = TRUE,
+    p.adjust.method = "bonferroni"
+    )
+pwc.high
+
+
+
+# USe this to describe colonization trajectory of snapping shrimp
+# Effect of time at each level of treatment
+one.way2.high <- spl_table_high %>%
+  group_by(site) %>%
+  anova_test(dv = spl_db, wid = hour, within = deploy) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+
+# Pairwise comparisons between time points 
+# doesn't work because 1 deployment has 8 samples instead of 7
+pwc2.high <- spl_table_high %>%
+  group_by(site) %>%
+  pairwise_t_test(
+    spl_db ~ deploy, paired = TRUE,
+    p.adjust.method = "bonferroni"
+    )
+pwc2.high
+
+
+```
 
 START HERE: 03/05/2020
-
 
 ```{r}
 
 library(ggplot2)
 library(ggpubr)
-setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final")
+library(lme4)
+
+
+#setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final")
 #spl_table = read.csv("low_dusk_spl_table.csv", header = TRUE)
-spl_table = read.csv("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/low_dusk_spl_table_time_02-21.csv", header = TRUE)
+spl_table = read.csv("C:/Users/Becca/Documents/git/PAM_Habitat_Enhancement/low_dusk_spl_table_time_02-21.csv", header = TRUE)
+spl_table$hour = as.factor(spl_table$hour)
+spl_table$site = as.factor(spl_table$site)
+spl_table$deploy = as.factor(spl_table$deploy)
+
+
 spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
 
 
@@ -162,32 +199,33 @@ hist(spl_table_high$spl_db)
 
 ## Low Frequency
 
+
 ```{r}
-#mod2 = lm(avg_low_db ~ Site*Deploy, data = avg_spl_dusk)
-#summary(mod2)
-#drop1(mod2, test = "F")
-#anova(mod2)
-
-#ggplot(avg_spl_dusk, aes(x = deploy, y = avg_low_db))+ theme_bw()+
-#  geom_boxplot()+ facet_wrap("Site")+ 
-#  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+ 
-#  theme(axis.text = element_text(size = 14), 
-#        strip.text = element_text(size = 16), 
-#        axis.title = element_text(size = 16))
-#ggsave("low_dusk_spl.png", 
-#       path =  "C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/plots_09_19/",
-#       width = 169,height = 81, units = "mm")
-#ggsave("low_dusk_spl.eps", path = "C:/Users/Becca/Desktop/figs", width = 169, units = "mm")
-
-mod2 = lm(spl_db ~ site*deploy, data = spl_table)
-summary(mod2)
-#drop1(mod2, test = "F")
-anova(mod2)
-ANOVA_low = aov(mod2)
-posthoc = TukeyHSD(ANOVA_low)
-site_deploy_mc = posthoc$`site:deploy`
-
-spl_table$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
+# mod2 = lm(spl_db ~ site*deploy, data = spl_table)
+# summary(mod2)
+# #drop1(mod2, test = "F")
+# anova(mod2)
+# ANOVA_low = aov(mod2)
+# posthoc = TukeyHSD(ANOVA_low)
+# site_deploy_mc = posthoc$`site:deploy`
+# 
+# residplot <- function(model){
+#   ggplot(model,aes(x=.fitted,y=.resid))+ 
+#     geom_point()+
+#     labs(x="Fitted values",y="Residuals")
+#   }
+# residplot(mod2)
+# 
+# qqplot <- function(model){
+#   q1 <- ggplot(model,aes(sample=.stdresid))
+#   q1+geom_point(stat="qq")+geom_abline(slope=1,intercept=0)+
+#     labs(x="Theoretical Quantiles",y="Standardized residuals")
+# }
+# qqplot(mod2)
+# 
+# shapiro.test(mod2$residuals)
+# 
+# spl_table$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
 
 #compare_means(spl_db ~ site, data = spl_table, group.by = "deploy") 
 
@@ -201,6 +239,8 @@ lf_spl = ggplot(spl_table, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()
         axis.title = element_text(size = 16), 
         legend.position = "none") 
         
+lf_spl
+
 
 ```
 
@@ -215,6 +255,12 @@ anova(highMod)
 ANOVA_high = aov(highMod)
 posthoc_high = TukeyHSD(ANOVA_high)
 site_deploy_mcH = posthoc_high$`site:deploy`
+
+residplot(highMod)
+qqplot(highMod)
+shapiro.test(highMod$residuals)
+
+
 
 spl_table_high$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
 
@@ -244,70 +290,6 @@ hf_spl = ggplot(spl_table_high, aes(x = deploy, y = spl_db, fill = site))+ theme
 #       path = "C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/plots_09_19/", 
 #       width = 169, height = 81, units = "mm")
 #ggsave("high_dusk_spl.eps", path = "C:/Users/Becca/Desktop/figs", width = 169, units = "mm")
-
-```
-
-## Putting the plots together
-
-```{r}
-library(cowplot)
-
-spl_plot = plot_grid(lf_spl, hf_spl, labels = c('A', 'B'))
-
-ggsave("dusk_spl_crypticPAM.eps", path = "C:/Users/Becca/Desktop/", width = 169,height = 80, units = "mm", dpi = 300)
-
-```
-
-## Estimated marginal means
-
-```{r}
-em_means = emmeans(mod2, ~ Site*Deploy)
-plot(em_means, by = "Deploy")+ theme_bw()+
-  labs(x = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"), y = "Site")+
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16),
-        strip.text = element_text(size = 16))
-#ggsave("low_emmeans.svg", path = "C:/Users/Becca/Desktop/figs", width = 169, height = 169, units = "mm")
-dev.off()
-
-
-
-high_emmeans = emmeans(high_mod1, specs = ~ Site*Deploy)
-#png("high_emmeans.png", width = 169, height = 162, units = "mm", res = 300)
-plot(high_emmeans, by = "Deploy")+ theme_bw()+
-  labs(x = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"), y = "Site")+
-  theme(axis.text = element_text(size = 14),
-        axis.title = element_text(size = 16),
-        strip.text = element_text(size = 16))
-ggsave("high_emmeans.svg", path = "C:/Users/Becca/Desktop/figs", width = 169, height = 169, units = "mm")
-
-dev.off() 
-## Exploring covariance reduction to look at just site variation and just deploy var
-#mtcars.rg_d.c <- ref_grid(mtcars.lm, at = list(cyl = c(4,6,8)),
-#                          cov.reduce = disp ~ cyl)
-
-#spl_rg_s.d = ref_grid(mod2, at = list(deploy = c("Nov","Jan","Apr","Jun","Aug")), cov.reduce = Site ~ deploy)
-```
-
-## Test code
-
-```{r}
-
-## Exploring expanding lm to twilight and night 
-# this is the average and median SPL for each day across dusk, night, and dawn
-avg_spl_night = spl_data1 %>% filter(daypart == "dusk" | daypart == "night" | daypart == "dawn") %>%
-  group_by(Deploy,Site,day) %>%
-  summarise(avg_spl_low = mean(low_SPL_linear), avg_spl_high = mean(high_SPL_linear),
-            med_spl_low = median(low_SPL_linear), med_spl_high = median(high_SPL_linear))%>%
-  mutate(avg_low_db = 10*log10(avg_spl_low), avg_high_db = 10*log10(avg_spl_high),
-         med_low_db = 10*log10(med_spl_low), med_high_db = 10*log10(med_spl_high))
-
-# qqplot for normality test
-qqnorm(avg_spl_night$avg_low_db)
-qqline(avg_spl_night$avg_low_db)
-
-qqnorm(avg_spl_night$avg_high_db)
-qqline(avg_spl_night$avg_high_db)
 
 ```
 
