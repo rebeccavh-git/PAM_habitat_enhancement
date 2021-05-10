@@ -1,5 +1,5 @@
 ---
-title: "night_spl_lm"
+title: "dusk_spl_repeatedmeasuresANOVA"
 author: "Becca Van Hoeck"
 date: "May 5, 2019"
 output: pdf_document
@@ -80,14 +80,24 @@ pwc.low
 ### New Reef and Established reef are the same in April
 
 
+# Boxplot
+lf_spl = ggplot(spl_table, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()+
+  geom_boxplot()+ #facet_wrap("Site")
+  scale_fill_manual(values=c("gray71", "firebrick2"), )+
+  scale_y_continuous(breaks=seq(90,120,5))+
+  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+
+  theme(axis.text = element_text(size = 14), 
+        strip.text = element_text(size = 16), 
+        axis.title = element_text(size = 16), 
+        legend.position = "none") 
+        
+lf_spl
+
 ```
 
 # High Frequency
 
-# To dO: add id variable and change cod for high frequency
-
 ```{r}
-
 spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
 spl_table_high$hour = as.factor(spl_table_high$hour)
 spl_table_high$site = as.factor(spl_table_high$site)
@@ -156,116 +166,6 @@ pwc2.high <- spl_table_high %>%
 pwc2.high
 
 
-```
-
-START HERE: 03/05/2020
-
-```{r}
-
-library(ggplot2)
-library(ggpubr)
-library(lme4)
-
-
-#setwd("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final")
-#spl_table = read.csv("low_dusk_spl_table.csv", header = TRUE)
-spl_table = read.csv("C:/Users/Becca/Documents/git/PAM_Habitat_Enhancement/low_dusk_spl_table_time_02-21.csv", header = TRUE)
-spl_table$hour = as.factor(spl_table$hour)
-spl_table$site = as.factor(spl_table$site)
-spl_table$deploy = as.factor(spl_table$deploy)
-
-
-spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
-
-
-# Low Freq: Normality test qqplot
-#qqnorm(avg_spl_dusk$avg_low_db)
-#qqline(avg_spl_dusk$avg_low_db)
-
-qqnorm(spl_table$spl_db)
-qqline(spl_table$spl_db)
-
-# High Freq: Normality test qqplot
-qqnorm(spl_table_high$spl_db)
-qqline(spl_table_high$spl_db)
-
-# Histograms
-#hist(avg_spl_dusk$avg_low_db)
-#hist(avg_spl_dusk$avg_high_db)
-
-hist(spl_table$spl_db)
-hist(spl_table_high$spl_db)
-```
-
-## Low Frequency
-
-
-```{r}
-# mod2 = lm(spl_db ~ site*deploy, data = spl_table)
-# summary(mod2)
-# #drop1(mod2, test = "F")
-# anova(mod2)
-# ANOVA_low = aov(mod2)
-# posthoc = TukeyHSD(ANOVA_low)
-# site_deploy_mc = posthoc$`site:deploy`
-# 
-# residplot <- function(model){
-#   ggplot(model,aes(x=.fitted,y=.resid))+ 
-#     geom_point()+
-#     labs(x="Fitted values",y="Residuals")
-#   }
-# residplot(mod2)
-# 
-# qqplot <- function(model){
-#   q1 <- ggplot(model,aes(sample=.stdresid))
-#   q1+geom_point(stat="qq")+geom_abline(slope=1,intercept=0)+
-#     labs(x="Theoretical Quantiles",y="Standardized residuals")
-# }
-# qqplot(mod2)
-# 
-# shapiro.test(mod2$residuals)
-# 
-# spl_table$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
-
-#compare_means(spl_db ~ site, data = spl_table, group.by = "deploy") 
-
-lf_spl = ggplot(spl_table, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()+
-  geom_boxplot()+ #facet_wrap("Site")
-  scale_fill_manual(values=c("gray71", "firebrick2"), )+
-  scale_y_continuous(breaks=seq(90,120,5))+
-  labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+
-  theme(axis.text = element_text(size = 14), 
-        strip.text = element_text(size = 16), 
-        axis.title = element_text(size = 16), 
-        legend.position = "none") 
-        
-lf_spl
-
-
-```
-
-## High frequency 
-
-```{r}
-
-highMod = lm(spl_db ~ site*deploy, data = spl_table_high)
-summary(highMod)
-#drop1(highMod, test = "F")
-anova(highMod)
-ANOVA_high = aov(highMod)
-posthoc_high = TukeyHSD(ANOVA_high)
-site_deploy_mcH = posthoc_high$`site:deploy`
-
-residplot(highMod)
-qqplot(highMod)
-shapiro.test(highMod$residuals)
-
-
-
-spl_table_high$deploy = factor(spl_table$deploy, levels = c("May","Jul","Sep","Oct","Dec","Apr"))
-
-#compare_means(spl_db ~ site, data = spl_table, group.by = "deploy") 
-
 hf_spl = ggplot(spl_table_high, aes(x = deploy, y = spl_db, fill = site))+ theme_bw()+
   geom_boxplot()+ #facet_wrap("Site")
   scale_fill_manual(values=c("gray71", "firebrick2"), )+
@@ -274,155 +174,7 @@ hf_spl = ggplot(spl_table_high, aes(x = deploy, y = spl_db, fill = site))+ theme
         strip.text = element_text(size = 16), 
         axis.title = element_text(size = 16), 
         legend.position = c(0.9, 0.15))
-
-# 
-# high_mod1 = lm(avg_high_db ~ Site*Deploy, data = avg_spl_dusk)
-# summary(high_mod1)
-# drop1(high_mod1, test = "F")
-# anova(high_mod1)
-# ggplot(avg_spl_dusk, aes(x = deploy, y = avg_high_db))+ theme_bw()+
-#   geom_boxplot()+ facet_wrap("Site")+
-#   labs(x = "Deployment", y = expression("Dusk SPL (dB re 1 "*{mu}*"Pa)"))+ 
-#   theme(axis.text = element_text(size = 14), 
-#         strip.text = element_text(size = 16), 
-#         axis.title = element_text(size = 16))
-#ggsave("high_dusk_spl.png", 
-#       path = "C:/Users/Becca/Documents/Grad_School/Research/Projects/Succession_Analysis/plots_09_19/", 
-#       width = 169, height = 81, units = "mm")
-#ggsave("high_dusk_spl.eps", path = "C:/Users/Becca/Desktop/figs", width = 169, units = "mm")
+hf_spl
 
 ```
-
-## Exploring wind and temperature to evaluate any trends
-
-```{r}
-
-library(ggplot2)
-library(lubridate)
-library(dplyr)
-
-# 2016
-buoy_2016 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/onslow_bay_buoy_2016.txt",
-                       header= TRUE, na.strings = "999.0")
-#buoy_2016 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/wilm_buoy_16.txt",
-#                       header= TRUE, na.strings = "999.0")
-
-buoy_2016$date = paste(buoy_2016$YY, buoy_2016$MM, buoy_2016$DD, buoy_2016$hh, buoy_2016$mm, sep = ":")
-buoy_2016$DateTime = ymd_hm(buoy_2016$date)
-
-buoy_2016$day = paste(buoy_2016$YY, buoy_2016$MM, buoy_2016$DD, sep = "-")
-buoy_2016$day = ymd(buoy_2016$day)
- 
-# water temperature: 
-ggplot(data = buoy_2016, aes(x = DateTime, y = WTMP))+
-  geom_line()+ ggtitle("Water temp 2016")
-
-# wind speed - annually very random, but should subset to specific sampling periods
-ggplot(data = buoy_2016, aes(x = DateTime, y = WSPD))+
-  geom_line()
-
-dates1 = seq(ymd("2016-05-18"),ymd("2016-05-24"), by = "day")
-dates2 = seq(ymd("2016-07-22"),ymd("2016-07-27"), by = "day")
-dates3 = seq(ymd("2016-09-14"),ymd("2016-09-17"), by = "day")
-dates4 = seq(ymd("2016-10-27"),ymd("2016-10-31"), by = "day")
-dates5 = seq(ymd("2016-12-03"),ymd("2016-12-07"), by = "day")
-
-sampling_dates = c(dates1,dates2,dates3,dates4,dates5)
-sampling_dates = as.data.frame(sampling_dates)
-buoy_16sp = left_join(sampling_dates, buoy_2016, by = c("sampling_dates" = "day"))
-
-# 2017
-buoy_2017 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/onslow_bay_buoy_2017.txt",
-                       header= TRUE, na.strings = "999.0")
-#buoy_2017 = read.table("C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/wilm_buoy_17.txt",
-#                       header= TRUE, na.strings = "999.0")
-
-buoy_2017$date = paste(buoy_2017$YY, buoy_2017$MM, buoy_2017$DD, buoy_2017$hh, buoy_2017$mm, sep = ":")
-buoy_2017$DateTime = ymd_hm(buoy_2017$date)
-
-buoy_2017$day = paste(buoy_2017$YY, buoy_2017$MM, buoy_2017$DD, sep = "-")
-buoy_2017$day = ymd(buoy_2017$day)
-
-dates6 = seq(ymd("2017-04-21"),ymd("2017-04-26"), by = "day")
-dates6 = as.data.frame(dates6)
-colnames(dates6) = "sampling_dates"
-buoy_17sp = left_join(dates6, buoy_2017, by = c("sampling_dates" = "day"))
-
-data = rbind(buoy_16sp,buoy_17sp)
-
-ggplot(data = buoy_2017, aes(x = DateTime, y = WTMP))+
-  geom_line()
-
-
-```
-
-# Plot boxplot of wind speed for each sampling period
-
-```{r}
-data$MM = factor(data$MM, levels = c("5","7","9","10","12","4"))
-
-
-ggplot(data = data, aes(x = MM, y = WSPD))+ theme_bw()+
-  geom_boxplot()+
-  geom_jitter(width = 0.15, alpha = 0.2, shape = 16)+
-  xlab("Sampling period (month)")
-
-wspd_anova = lm(WSPD ~ MM, data = data)
-summary(wspd_anova)
-anova(wspd_anova)
-wspd_aov = aov(wspd_anova)
-TukeyHSD(wspd_aov)
-
-```
-
-# Windspeed timeseries
-
-```{r}
-
-ggplot(data, aes(x = DateTime, y = WSPD))+
-  geom_line()
-
-envd1 = filter(data, data$MM == "5")
-write.csv(envd1,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd1.csv")
-envd2 = filter(data, data$MM == "7")
-write.csv(envd2,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd2.csv")
-envd3 = filter(data, data$MM == "9")
-write.csv(envd3,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd3.csv")
-envd4 = filter(data, data$MM == "10")
-write.csv(envd4,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd4.csv")
-envd5 = filter(data, data$MM == "12")
-write.csv(envd5,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd5.csv")
-envd6 = filter(data, data$MM == "4")
-write.csv(envd6,"C:/Users/Becca/Documents/MATLAB/mfiles/Succession_scripts/final/prep_analyses/envd6.csv")
-
-# May
-ggplot(data = envd1, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("May")
-
-# July
-ggplot(data = envd2, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("Jul")
-
-# Sep
-ggplot(data = envd3, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("Sep")
-
-# Oct
-ggplot(data = envd4, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("Oct")
-
-# Dec
-ggplot(data = envd5, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("Dec")
-
-# April
-ggplot(data = envd6, aes(x = DateTime, y = WSPD))+
-  geom_line()+ ggtitle("Apr")
-
-
-mean(envd3$WSPD)-mean(envd2$WSPD)
-
-
-```
-
 
