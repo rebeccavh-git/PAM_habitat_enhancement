@@ -22,13 +22,19 @@ library(rstatix)
 
 ```
 
-# Low Frequency
+### Repeated measures ANOVA, replicates are daily average of SPL
 
 ```{r}
-spl_table = read.csv("C:/Users/Becca/Documents/git/PAM_Habitat_Enhancement/low_dusk_spl_table_time_02-21.csv", header = TRUE)
-spl_table$hour = as.factor(spl_table$hour)
+# Low Frequency
+
+spl_table = read.csv("C:/Users/Becca/Documents/git/PAM_Habitat_Enhancement/low_dusk_spl_table_day_05-21.csv", header = TRUE)
+spl_table$day = as.factor(spl_table$day)
 spl_table$site = as.factor(spl_table$site)
-spl_table$deploy = as.factor(spl_table$deploy)
+spl_table$deploy = factor(spl_table$deploy, levels = c("May", "Jul", "Sep", "Oct", "Dec", "Apr"))
+
+# Remove outlier and re-run
+#spl_table$spl_db[8] = NA
+# Removing outlier had no effect on result, so all data are retained
 
 # Two-way Repeated measures ANOVA:
 
@@ -45,14 +51,14 @@ spl_table %>%
 # Check normality
 spl_table %>%
   group_by(site,deploy) %>%
-  shapiro_test(spl_db) # Indra April and JJ Tug Dec violate normality
+  shapiro_test(spl_db) 
 
 ggqqplot(spl_table, "spl_db", ggtheme = theme_bw()) +
   facet_grid(deploy ~ site, labeller = "label_both") # pass normality test with qqplot
 
 # Conduct ANOVA  
 res.aov.low <- anova_test(
-  data = spl_table, dv = spl_db, wid = hour,
+  data = spl_table, dv = spl_db, wid = day,
   within = c(site, deploy)
   )
 get_anova_table(res.aov.low)
@@ -62,9 +68,8 @@ get_anova_table(res.aov.low)
 # Effect of site at each time point
 one.way <- spl_table %>%
   group_by(deploy) %>%
-  anova_test(dv = spl_db, wid = hour, within = site) %>%
-  get_anova_table() %>%
-  adjust_pvalue(method = "bonferroni")
+  anova_test(dv = spl_db, wid = day, within = site) %>%
+  get_anova_table()
 one.way
 ### Identified significant differences in all deployments except April (final deployment)
 
@@ -98,11 +103,15 @@ lf_spl
 # High Frequency
 
 ```{r}
-spl_table_high = read.csv("high_dusk_spl_table_time_02-21.csv", header = TRUE)
-spl_table_high$hour = as.factor(spl_table_high$hour)
+spl_table_high = read.csv("high_dusk_spl_table_day_05-21.csv", header = TRUE)
+spl_table_high$day = as.factor(spl_table_high$day)
 spl_table_high$site = as.factor(spl_table_high$site)
-spl_table_high$deploy = as.factor(spl_table_high$deploy)
+spl_table_high$deploy = factor(spl_table_high$deploy, levels = c("May", "Jul", "Sep", "Oct", "Dec", "Apr"))
 
+
+# Remove outlier and re-run
+#spl_table_high$spl_db[51] = NA
+# Removing outlier had no effect on result, so all data are retained
 
 # testing two-way Repeated measures: 
 spl_table_high %>%
@@ -123,7 +132,7 @@ ggqqplot(spl_table_high, "spl_db", ggtheme = theme_bw()) +
 # Conduct ANOVA  
 # is pseudoreplication still a concern?
 res.aov.high <- anova_test(
-  data = spl_table_high, dv = spl_db, wid = hour,
+  data = spl_table_high, dv = spl_db, wid = day,
   within = c(site, deploy)
   )
 get_anova_table(res.aov.high)
@@ -131,7 +140,7 @@ get_anova_table(res.aov.high)
 # Effect of site at each time point
 one.way.high <- spl_table_high %>%
   group_by(deploy) %>%
-  anova_test(dv = spl_db, wid = hour, within = site) %>%
+  anova_test(dv = spl_db, wid = day, within = site) %>%
   get_anova_table() %>%
   adjust_pvalue(method = "bonferroni")
 one.way.high
@@ -151,9 +160,10 @@ pwc.high
 # Effect of time at each level of treatment
 one.way2.high <- spl_table_high %>%
   group_by(site) %>%
-  anova_test(dv = spl_db, wid = hour, within = deploy) %>%
+  anova_test(dv = spl_db, wid = day, within = deploy) %>%
   get_anova_table() %>%
   adjust_pvalue(method = "bonferroni")
+one.way2.high
 
 # Pairwise comparisons between time points 
 # doesn't work because 1 deployment has 8 samples instead of 7
@@ -175,6 +185,22 @@ hf_spl = ggplot(spl_table_high, aes(x = deploy, y = spl_db, fill = site))+ theme
         axis.title = element_text(size = 16), 
         legend.position = c(0.9, 0.15))
 hf_spl
+
+#different seasonal changes
+avgspl = spl_table_high %>%
+  group_by(site, deploy) %>%
+  summarize(meanSPL = mean(spl_db))
+EstReef_diff = avgspl$meanSPL[2] - avgspl$meanSPL[1]
+NewReef_diff = avgspl$meanSPL[8] - avgspl$meanSPL[7]
+
+EstReef_diffFinal = avgspl$meanSPL[6] - avgspl$meanSPL[5]
+NewReef_diffFinal = avgspl$meanSPL[12] - avgspl$meanSPL[11]
+```
+
+# plotting for publication
+
+```{r}
+ggarrange(lf_spl, hf_spl, labels = c("A", "B"), ncol = 2)
 
 ```
 
